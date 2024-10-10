@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta tags and title -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卜十田十女火竹日水</title>
+    <!-- Styles -->
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #111;
+        }
+
+        #textContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .text {
+            position: absolute;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            opacity: 1;
+            animation: none;
+            text-transform: uppercase;
+            z-index: 20;
+        }
+
+        /* Apply fade to individual letters with 3 seconds delay before disappearing */
+        .text span {
+            display: inline-block;
+            animation: fade-out 0.5s forwards;
+            animation-delay: 2s;
+        }
+
+        @keyframes fade-out {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Matrix code effect */
+        .matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+            display: flex;
+        }
+
+        .matrix-code {
+            font-size: 20px;
+            line-height: 20px;
+            display: flex;
+            flex-direction: column;
+            animation: scroll-code 10s linear infinite;
+            animation-delay: calc(1s * var(--delay));
+            animation-fill-mode: backwards;
+            opacity: calc(0.1 + var(--delay) * 0.05);
+            color: #daa520;
+        }
+
+        .matrix-char {
+            display: block;
+        }
+
+        /* Vertical scrolling of matrix code */
+        @keyframes scroll-code {
+            0% {
+                transform: translateY(-150vh);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="textContainer"></div>
+
+<!-- Matrix code running in the background -->
+<div class="matrix" id="matrix"></div>
+
+<script>
+    // Function to generate a random number between min and max
+    function getRandom(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Function to display text with disappearing effect after 3 seconds
+    function displayText(text) {
+        // Limit text to a maximum of 30 characters
+        if (text.length > 30) {
+            text = text.substring(0, 30);
+        }
+
+        const newText = document.createElement('div');
+        newText.classList.add('text');
+
+        // Set a random font size between 50px and 110px
+        const randomFontSize = getRandom(50, 110) + 'px';
+        newText.style.fontSize = randomFontSize;
+
+        // Wrap each letter and space in a span for individual animation
+        newText.innerHTML = text.split('').map((letter, i) => {
+            const delay = i * 0.2; // Each letter will disappear 0.2 seconds after the previous one
+            return `<span style="animation-delay: ${delay + 3}s;">${letter === ' ' ? '&nbsp;' : letter}</span>`;
+        }).join('');
+
+        // Random position
+        newText.style.top = getRandom(0, window.innerHeight - 100) + 'px';
+        newText.style.left = getRandom(0, window.innerWidth - 300) + 'px';
+
+        document.getElementById('textContainer').appendChild(newText);
+
+        // Remove the text after the full sequence is done
+        setTimeout(() => {
+            newText.remove();
+        }, (text.length * 200) + 3000); // Adjust the time to account for the 3 seconds delay
+    }
+
+    // Cangjie characters to use in the Matrix effect
+    const cangjieChars = ['日', '月', '金', '木', '水', '火', '土', '戈', '十', '女', '卜', '戈', '心', '手', '口', '尸'];
+
+    // Create columns of matrix code
+    for (let i = 0; i < 100; i++) {
+        const matrixCol = document.createElement('div');
+        matrixCol.classList.add('matrix-code');
+        matrixCol.style.setProperty('--delay', getRandom(0, 10)); // Random delay for each column
+
+        // Add random Cangjie characters to each column
+        for (let j = 0; j < 50; j++) {
+            const randomChar = cangjieChars[Math.floor(Math.random() * cangjieChars.length)];
+            const charSpan = document.createElement('span');
+            charSpan.classList.add('matrix-char');
+            charSpan.innerText = randomChar;
+            matrixCol.appendChild(charSpan);
+        }
+
+        // Add the column to the matrix container
+        document.getElementById('matrix').appendChild(matrixCol);
+    }
+
+    // WebSocket connection
+    const socket = new WebSocket('wss://59.124.231.138:8080');
+
+    socket.addEventListener('open', () => {
+        console.log('Connected to WebSocket server');
+    });
+
+    socket.addEventListener('message', (event) => {
+        const message = event.data.trim();
+        if (message) {
+            displayText(message);
+        }
+    });
+
+    socket.addEventListener('close', () => {
+        console.log('Disconnected from WebSocket server');
+    });
+
+    // Optional: Handle WebSocket errors
+    socket.addEventListener('error', (error) => {
+        console.error('WebSocket error:', error);
+    });
+</script>
+
+</body>
+</html>
